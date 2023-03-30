@@ -1,118 +1,88 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:randomwords/components/big_card.dart';
 
 void main() {
-  runApp(const RandomWordsApp());
+  runApp(MyApp());
 }
 
-class RandomWordsApp extends StatelessWidget {
-  const RandomWordsApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lorem Ipsum',
-      theme: ThemeData(primaryColor: Colors.amber[900], useMaterial3: true),
-      home: const HomePage(title: 'Lorem Ipsum'),
-      debugShowCheckedModeBanner: false,
+    return ChangeNotifierProvider(
+      create: (context) => MyAppState(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Namer App',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        ),
+        home: HomePage(),
+      ),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
-  final String title;
+class MyAppState extends ChangeNotifier {
+  var current = WordPair.random();
+  var favorites = <WordPair>[];
 
-  @override
-  State<HomePage> createState() => MyAppState();
+  void getNext() {
+    current = WordPair.random();
+    notifyListeners();
+  }
+
+  void toggleFavorite() {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
+    } else {
+      favorites.add(current);
+    }
+    notifyListeners();
+  }
 }
 
-class MyAppState extends State<HomePage> {
-  WordPair _word = WordPair.random();
-  List<WordPair> _words = <WordPair>[];
-
-  void _incrementCounter() {
-    setState(() {
-      _word = WordPair.random();
-    });
-  }
-
-  void _toggleFavorite() {
-    setState(() {
-      if (_words.contains(_word)) {
-        _words.remove(_word);
-        return;
-      }
-      _words.add(_word);
-    });
-  }
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    var appState = context.watch<MyAppState>();
+    var pair = appState.current;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Your random word is:',
-              style: TextStyle(fontSize: 24),
-            ),
-            Text(
-              '${_word}',
-              style: theme.textTheme.headlineLarge,
-              semanticsLabel: '${_word.first} ${_word.second}',
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            BigCard(pair: pair),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(height: 12),
+              children: [
                 ElevatedButton.icon(
-                    onPressed: _incrementCounter,
-                    // ignore: prefer_const_constructors
-                    style: ButtonStyle(
-                      minimumSize:
-                          const MaterialStatePropertyAll(Size(196, 64)),
-                      maximumSize:
-                          const MaterialStatePropertyAll(Size(196, 64)),
-                      padding:
-                          const MaterialStatePropertyAll(EdgeInsets.all(0)),
-                    ),
-                    icon: const Icon(Icons.question_mark_sharp),
-                    label: const Text('Próxima Palavra')),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  label: _words.contains(_word)
-                      ? const Text('Favoritar')
-                      : const Text(
-                          'Remover dos favoritos',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                  onPressed: () {
-                    _toggleFavorite();
-                  },
-                  // ignore: prefer_const_constructors
-                  style: ButtonStyle(
-                    maximumSize: const MaterialStatePropertyAll(Size(196, 64)),
-                    minimumSize: const MaterialStatePropertyAll(Size(196, 64)),
-                    padding: const MaterialStatePropertyAll(EdgeInsets.all(0)),
-                  ),
-                  icon: _words.contains(_word)
-                      ? const Icon(Icons.star_sharp)
-                      : const Icon(Icons.star_outline_sharp),
-                )
+                    onPressed: () {
+                      appState.toggleFavorite();
+                    },
+                    icon: const Icon(Icons.favorite, size: 16),
+                    label: const Text(
+                      "Like!",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    )),
+                ElevatedButton(
+                    onPressed: () {
+                      appState.getNext();
+                    },
+                    child: const Text('Next idea!',
+                        style: TextStyle(fontWeight: FontWeight.bold))),
               ],
             ),
-            Text(_words.toString())
+            Text(appState.favorites.toString()),
           ],
         ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
